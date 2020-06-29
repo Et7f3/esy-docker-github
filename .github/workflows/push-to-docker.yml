@@ -17,6 +17,7 @@ jobs:
       matrix:
         os: [archlinux]
     steps:
+      - run: echo -n ${{ secrets.GITHUB_TOKEN }} | docker login https://docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       - uses: actions/checkout@v2
       - run: docker build -t docker.pkg.github.com/et7f3/esydockergithub/${{ matrix.os }}:${{ github.sha }} ./${{ matrix.os }}
       - name: Install dependencies
