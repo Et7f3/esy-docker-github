@@ -28,7 +28,7 @@ jobs:
         with:
           script: |
             const repository_lowercase = process.env.repository.toLowerCase();
-            const image_name = process.env.repository_owner.substr(process.env.repository_owner.length + 1) + "-" + process.env.os_name;
+            const image_name = process.env.repository.substr(process.env.repository_owner.length + 1) + "-" + process.env.os_name;
             const dbg = (...args) => {
               core.setOutput(...args);
               console.log(...args);
