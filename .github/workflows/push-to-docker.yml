@@ -40,7 +40,7 @@ jobs:
       - run: echo -n ${{ secrets.GITHUB_TOKEN }} | docker login https://docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       - run: docker build -t ${{ steps.setup_docker.outputs.image_name }} ./${{ matrix.os }}
       - name: Install dependencies
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ steps.setup_docker.outputs.docker_url }} bash -c "cd /revery && esy install --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /revery && esy install --prefix-path=/esy/store/.esy"
       - name: Print esy cache
         id: print_esy_cache
         uses: actions/github-script@v2
