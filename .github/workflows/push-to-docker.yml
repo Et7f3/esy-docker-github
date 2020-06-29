@@ -2,15 +2,21 @@ name: Validate Pull Request
 
 on:
   push:
+# BEGIN MONOREPO CODE
+    paths:
+      - 'backend'
+# END MONOREPO CODE
     branches:
       - master
   pull_request:
 
 jobs:
   build_docker:
+# BEGIN MONOREPO CODE
     defaults:
       run:
         working-directory: backend
+# END MONOREPO CODE
     name: Build inside a docker
     runs-on: ubuntu-latest
     strategy:
