@@ -76,4 +76,5 @@ jobs:
         run: |
           docker images -q  ${{ steps.setup_docker.outputs.image_name }}
           docker tag $(docker images -q  ${{ steps.setup_docker.outputs.image_name }}) ${{ steps.setup_docker.outputs.docker_url }}latest
+          docker tag $(docker images -q  ${{ steps.setup_docker.outputs.image_name }}) ${{ steps.setup_docker.outputs.docker_url }}${{ github.sha }}
           docker push ${{ steps.setup_docker.outputs.docker_url }}latest
