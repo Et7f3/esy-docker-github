@@ -1,16 +1,10 @@
- 
 FROM archlinux:latest
 
 RUN pacman -Syu --noconfirm
 RUN pacman -S --noconfirm base base-devel git npm perl
 #perl for shasum binary
 
-# Revery special deps
-RUN pacman -S --noconfirm libpng libxcursor libxi libxinerama libxrandr harfbuzz glu gtk3 fontconfig nasm python2 clang
 ENV PATH=$PATH:/usr/bin/core_perl
-
-# workaround for esy-skia that need `python` binary
-RUN cp /usr/bin/python2 /usr/bin/python
 
 # workaround hack while ocaml-secondary-compiler@4.08.1 work well with gcc 10
 RUN mv /usr/bin/gcc /usr/bin/gcc-orig
