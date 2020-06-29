@@ -74,6 +74,6 @@ jobs:
       - run: docker images --all
       - name: Push to docker
         run: |
-          docker image -q  ${{ steps.setup_docker.outputs.image_name }}
-          docker tag $(docker image -q  ${{ steps.setup_docker.outputs.image_name }}) ${{ steps.setup_docker.outputs.docker_url }}:latest
+          docker images -q  ${{ steps.setup_docker.outputs.image_name }}
+          docker tag $(docker images -q  ${{ steps.setup_docker.outputs.image_name }}) ${{ steps.setup_docker.outputs.docker_url }}:latest
           docker push ${{ steps.setup_docker.outputs.docker_url }}:latest
