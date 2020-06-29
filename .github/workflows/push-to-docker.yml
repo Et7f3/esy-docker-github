@@ -51,4 +51,4 @@ jobs:
         if: steps.deps-cache.outputs.cache-hit != 'true'
         run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ matrix.os }} bash -c "cd /revery && esy cleanup . --prefix-path=/esy/store/.esy"
       - name: Push to docker
-        run: docker push docker.pkg.github.com/Et7f3/esy_docker_github/archlinux-${{ matrix.os }}:${{ github.sha }}
+        run: docker push docker.pkg.github.com/Et7f3/esydockergithub/archlinux-${{ matrix.os }}:${{ github.sha }}
