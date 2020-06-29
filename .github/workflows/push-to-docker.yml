@@ -29,9 +29,13 @@ jobs:
           script: |
             const repository_lowercase = process.env.repository.toLowerCase();
             const image_name = process.env.repository_owner.substr(process.env.repository_owner.length + 1) + "-" + process.env.os_name;
-            core.setOutput("repository_lowercase", repository_lowercase);
-            core.setOutput("image_name", image_name);
-            core.setOutput("docker_url", `docker.pkg.github.com/${repository_lowercase}/${image_name}:`)
+            const dbg = (...arg) => {
+              core.setOutput(...args);
+              console.log(...args);
+            }
+            dbg("repository_lowercase", repository_lowercase);
+            dbg("image_name", image_name);
+            dbg("docker_url", `docker.pkg.github.com/${repository_lowercase}/${image_name}:`);
             // We will-pick id later
       - run: echo -n ${{ secrets.GITHUB_TOKEN }} | docker login https://docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       - run: docker build -t ${{ steps.setup_docker.image_name }} ./${{ matrix.os }}
