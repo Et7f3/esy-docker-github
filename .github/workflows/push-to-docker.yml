@@ -4,7 +4,7 @@ on:
   push:
 # BEGIN MONOREPO CODE
     paths:
-      - 'backend'
+      - 'backend/**'
 # END MONOREPO CODE
     branches:
       - master
