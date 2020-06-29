@@ -21,7 +21,7 @@ jobs:
       - run: echo -n ${{ secrets.GITHUB_TOKEN }} | docker login https://docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       - run: docker build -t docker.pkg.github.com/et7f3/esydockergithub/${{ matrix.os }}:latest ./${{ matrix.os }}
       - name: Install dependencies
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store docker.pkg.github.com/et7f3/esydockergithub/${{ matrix.os }}:${{ github.sha }} bash -c "cd /revery && esy install --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store docker.pkg.github.com/et7f3/esydockergithub/${{ matrix.os }}:latest bash -c "cd /revery && esy install --prefix-path=/esy/store/.esy"
       - name: Print esy cache
         id: print_esy_cache
         uses: actions/github-script@v2
@@ -42,15 +42,15 @@ jobs:
             ${{ matrix.os }}-
       - name: Build release dependencies
         if: steps.deps-cache.outputs.cache-hit != 'true'
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store docker.pkg.github.com/et7f3/esydockergithub/${{ matrix.os }}:${{ github.sha }} bash -c "cd /revery && esy build-dependencies --release --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store docker.pkg.github.com/et7f3/esydockergithub/${{ matrix.os }}:latest bash -c "cd /revery && esy build-dependencies --release --prefix-path=/esy/store/.esy"
       - name: Build project in release
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store docker.pkg.github.com/et7f3/esydockergithub/${{ matrix.os }}:${{ github.sha }} bash -c "cd /revery && esy build --release --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store docker.pkg.github.com/et7f3/esydockergithub/${{ matrix.os }}:latest bash -c "cd /revery && esy build --release --prefix-path=/esy/store/.esy"
       - name: Build test/dev dependencies
         if: steps.deps-cache.outputs.cache-hit != 'true'
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store docker.pkg.github.com/et7f3/esydockergithub/${{ matrix.os }}:${{ github.sha }} bash -c "cd /revery && esy build-dependencies --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store docker.pkg.github.com/et7f3/esydockergithub/${{ matrix.os }}:latest bash -c "cd /revery && esy build-dependencies --prefix-path=/esy/store/.esy"
       - name: Clean global store
         if: steps.deps-cache.outputs.cache-hit != 'true'
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store docker.pkg.github.com/et7f3/esydockergithub/${{ matrix.os }}:${{ github.sha }} bash -c "cd /revery && esy cleanup . --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store docker.pkg.github.com/et7f3/esydockergithub/${{ matrix.os }}:latest bash -c "cd /revery && esy cleanup . --prefix-path=/esy/store/.esy"
       - run: docker images
       - run: docker images --all
       - name: Push to docker
