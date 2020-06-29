@@ -8,6 +8,7 @@ on:
 # END MONOREPO CODE
     branches:
       - master
+      - ci_docker
   pull_request:
 
 jobs:
