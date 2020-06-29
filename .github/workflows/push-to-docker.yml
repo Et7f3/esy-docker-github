@@ -2,15 +2,21 @@ name: Validate Pull Request
 
 on:
   push:
+# BEGIN MONOREPO CODE
+    paths:
+      - 'backend'
+# END MONOREPO CODE
     branches:
       - master
   pull_request:
 
 jobs:
   build_docker:
+# BEGIN MONOREPO CODE
     defaults:
       run:
         working-directory: backend
+# END MONOREPO CODE
     name: Build inside a docker
     runs-on: ubuntu-latest
     strategy:
@@ -18,9 +24,29 @@ jobs:
         os: [archlinux]
     steps:
       - uses: actions/checkout@v2
-      - run: docker build -t ${{ matrix.os }} ./${{ matrix.os }}
+      - name: Setup docker variables
+        id: setup_docker
+        uses: actions/github-script@v2
+        env:
+          os_name: ${{ matrix.os }}
+          repository: ${{ github.repository }}
+          repository_owner: ${{ github.repository_owner }}
+        with:
+          script: |
+            const repository_lowercase = process.env.repository.toLowerCase();
+            const image_name = process.env.repository.substr(process.env.repository_owner.length + 1) + "-" + process.env.os_name;
+            const dbg = (...args) => {
+              core.setOutput(...args);
+              console.log(...args);
+            }
+            dbg("repository_lowercase", repository_lowercase);
+            dbg("image_name", image_name);
+            dbg("docker_url", `docker.pkg.github.com/${repository_lowercase}/${image_name}:`);
+            // We will-pick id later
+      - run: echo -n ${{ secrets.GITHUB_TOKEN }} | docker login https://docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+      - run: docker build -t ${{ steps.setup_docker.outputs.image_name }} ./${{ matrix.os }}
       - name: Install dependencies
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ matrix.os }} bash -c "cd /revery && esy install --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /revery && esy install --prefix-path=/esy/store/.esy"
       - name: Print esy cache
         id: print_esy_cache
         uses: actions/github-script@v2
@@ -41,12 +67,20 @@ jobs:
             ${{ matrix.os }}-
       - name: Build release dependencies
         if: steps.deps-cache.outputs.cache-hit != 'true'
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ matrix.os }} bash -c "cd /revery && esy build-dependencies --release --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /revery && esy build-dependencies --release --prefix-path=/esy/store/.esy"
       - name: Build project in release
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ matrix.os }} bash -c "cd /revery && esy build --release --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /revery && esy build --release --prefix-path=/esy/store/.esy"
       - name: Build test/dev dependencies
         if: steps.deps-cache.outputs.cache-hit != 'true'
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ matrix.os }} bash -c "cd /revery && esy build-dependencies --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /revery && esy build-dependencies --prefix-path=/esy/store/.esy"
       - name: Clean global store
         if: steps.deps-cache.outputs.cache-hit != 'true'
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ matrix.os }} bash -c "cd /revery && esy cleanup . --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /revery && esy cleanup . --prefix-path=/esy/store/.esy"
+      - name: Push ${{ github.sha }} to docker
+        run: |
+          docker tag $(docker images -q  ${{ steps.setup_docker.outputs.image_name }}) ${{ steps.setup_docker.outputs.docker_url }}${{ github.sha }}
+          docker push ${{ steps.setup_docker.outputs.docker_url }}${{ github.sha }}
+      - name: Push latest to docker
+        run: |
+          docker tag $(docker images -q  ${{ steps.setup_docker.outputs.image_name }}) ${{ steps.setup_docker.outputs.docker_url }}latest
+          docker push ${{ steps.setup_docker.outputs.docker_url }}latest
