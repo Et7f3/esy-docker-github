@@ -23,10 +23,12 @@ jobs:
         uses: actions/github-script@v2
         env:
           os_name: ${{ matrix.os }}
+          repository: ${{ github.repository }}
+          repository_owner: ${{ github.repository_owner }}
         with:
           script: |
-            const repository_lowercase = github.repository.toLowerCase();
-            const image_name = github.repository_owner.substr(github.repository_owner.length + 1) + "-" + process.env.os_name;
+            const repository_lowercase = process.env.repository.toLowerCase();
+            const image_name = process.env.repository_owner.substr(process.env.repository_owner.length + 1) + "-" + process.env.os_name;
             core.setOutput("repository_lowercase", repository_lowercase);
             core.setOutput("image_name", image_name);
             core.setOutput("docker_url", `docker.pkg.github.com/${repository_lowercase}/${image_name}:`)
