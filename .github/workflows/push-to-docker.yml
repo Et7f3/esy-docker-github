@@ -1,0 +1,52 @@
+name: Validate Pull Request
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  build_docker:
+    defaults:
+      run:
+        working-directory: backend
+    name: Build inside a docker
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [archlinux]
+    steps:
+      - uses: actions/checkout@v2
+      - run: docker build -t ${{ matrix.os }} ./${{ matrix.os }}
+      - name: Install dependencies
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ matrix.os }} bash -c "cd /revery && esy install --prefix-path=/esy/store/.esy"
+      - name: Print esy cache
+        id: print_esy_cache
+        uses: actions/github-script@v2
+        with:
+          script: |
+            const path = require('path')
+            const scriptPath = path.resolve('.github/workflows/print_esy_cache.js')
+            require(scriptPath)(core)
+      - name: Take ownership of docker store
+        run: sudo chown -R $(id -un):$(id -gn) ${{ steps.print_esy_cache.outputs.esy_cache }}
+      - name: Try to restore dependencies cache
+        id: deps-cache
+        uses: actions/cache@v2.0.0
+        with:
+          path: ${{ steps.print_esy_cache.outputs.esy_cache }}
+          key: ${{ matrix.os }}-${{ hashFiles('**/index.json') }}
+          restore-keys: |
+            ${{ matrix.os }}-
+      - name: Build release dependencies
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ matrix.os }} bash -c "cd /revery && esy build-dependencies --release --prefix-path=/esy/store/.esy"
+      - name: Build project in release
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ matrix.os }} bash -c "cd /revery && esy build --release --prefix-path=/esy/store/.esy"
+      - name: Build test/dev dependencies
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ matrix.os }} bash -c "cd /revery && esy build-dependencies --prefix-path=/esy/store/.esy"
+      - name: Clean global store
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ matrix.os }} bash -c "cd /revery && esy cleanup . --prefix-path=/esy/store/.esy"
