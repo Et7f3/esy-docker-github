@@ -33,19 +33,21 @@ jobs:
         with:
           script: |
             const repository_lowercase = process.env.repository.toLowerCase();
-            const image_name = process.env.repository.substr(process.env.repository_owner.length + 1) + "-" + process.env.os_name;
+            const repository_name = process.env.repository.substr(process.env.repository_owner.length + 1);
+            const image_name = repository_name + "-" + process.env.os_name;
             const dbg = (...args) => {
               core.setOutput(...args);
               console.log(...args);
             }
             dbg("repository_lowercase", repository_lowercase);
+            dbg("repository_name", repository_name);
             dbg("image_name", image_name);
             dbg("docker_url", `docker.pkg.github.com/${repository_lowercase}/${image_name}:`);
             // We will-pick id later
       - run: echo -n ${{ secrets.GITHUB_TOKEN }} | docker login https://docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       - run: docker build -t ${{ steps.setup_docker.outputs.image_name }} ./${{ matrix.os }}
       - name: Install dependencies
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /revery && esy install --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/${{ steps.setup_docker.outputs.repository_name }} --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /${{ steps.setup_docker.outputs.repository_name }} && esy install --prefix-path=/esy/store/.esy"
       - name: Print esy cache
         id: print_esy_cache
         uses: actions/github-script@v2
@@ -66,15 +68,15 @@ jobs:
             ${{ matrix.os }}-
       - name: Build release dependencies
         if: steps.deps-cache.outputs.cache-hit != 'true'
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /revery && esy build-dependencies --release --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/${{ steps.setup_docker.outputs.repository_name }} --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /${{ steps.setup_docker.outputs.repository_name }} && esy build-dependencies --release --prefix-path=/esy/store/.esy"
       - name: Build project in release
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /revery && esy build --release --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/${{ steps.setup_docker.outputs.repository_name }} --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /${{ steps.setup_docker.outputs.repository_name }} && esy build --release --prefix-path=/esy/store/.esy"
       - name: Build test/dev dependencies
         if: steps.deps-cache.outputs.cache-hit != 'true'
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /revery && esy build-dependencies --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/${{ steps.setup_docker.outputs.repository_name }} --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /${{ steps.setup_docker.outputs.repository_name }} && esy build-dependencies --prefix-path=/esy/store/.esy"
       - name: Clean global store
         if: steps.deps-cache.outputs.cache-hit != 'true'
-        run: docker run --rm --volume $(pwd):/revery --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /revery && esy cleanup . --prefix-path=/esy/store/.esy"
+        run: docker run --rm --volume $(pwd):/${{ steps.setup_docker.outputs.repository_name }} --volume ~:/esy/store ${{ steps.setup_docker.outputs.image_name }} bash -c "cd /${{ steps.setup_docker.outputs.repository_name }} && esy cleanup . --prefix-path=/esy/store/.esy"
       - name: Push ${{ github.sha }} to docker
         run: |
           docker tag $(docker images -q  ${{ steps.setup_docker.outputs.image_name }}) ${{ steps.setup_docker.outputs.docker_url }}${{ github.sha }}
